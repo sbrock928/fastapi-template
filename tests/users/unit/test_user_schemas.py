@@ -8,6 +8,8 @@ from typing import Dict, Any
 
 
 class TestUserCreateSchema:
+    """Unit tests for the UserCreate schema."""
+
     def test_valid_user_create(self, user_payload: Dict[str, Any]) -> None:
         user = UserCreate(**user_payload)
         assert user.first_name == "Alice"
@@ -23,6 +25,8 @@ class TestUserCreateSchema:
 
 
 class TestUserUpdateSchema:
+    """Unit tests for the UserUpdate schema."""
+
     def test_valid_user_update(self, user_payload: Dict[str, Any]) -> None:
         user = UserUpdate(**user_payload)
         assert user.first_name == "Alice"
@@ -35,6 +39,8 @@ class TestUserUpdateSchema:
 
 
 class TestUserResponseSchema:
+    """Unit tests for the UserResponse schema."""
+
     def test_valid_user_response(self, user_response: Dict[str, Any]) -> None:
         user = UserResponse(**user_response)
         assert user.id == 1

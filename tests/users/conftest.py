@@ -19,13 +19,13 @@ def user_payload(
 
 @pytest.fixture()
 def user_response(
-    id: int = 1,
+    user_id: int = 1,
     first_name: str = "Alice",
     last_name: str = "Smith",
     email: str = "alice@example.com",
 ) -> Dict[str, Any]:
     return {
-        "id": id,
+        "id": user_id,
         "first_name": first_name,
         "last_name": last_name,
         "email": email,
