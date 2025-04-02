@@ -10,7 +10,6 @@ validation and error handling.
 from fastapi import APIRouter
 from app.users.schemas import UserCreate, UserResponse, UserUpdate
 from app.users.service import UserService
-from app.users.exceptions import UserNotFound
 from app.core.exceptions import NoContent
 from app.users.dao import UserDAO
 from app.core.database import SessionDep
