@@ -1,50 +1,32 @@
 """
-Async DAO (Data Access Object) for the User domain.
-Handles low-level database interactions for the UserModel.
+Data Access Object (DAO) implementation for the User domain.
+
+This module defines the `UserDAO`, which provides async persistence methods
+for user-related operations. It extends the generic `BaseDAO` to inherit
+CRUD capabilities and serves as the foundation for more complex user-specific
+queries and database interactions.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from app.core.dao import BaseDAO
 from app.users.models import UserModel
 from app.users.schemas import UserCreate, UserUpdate
-from typing import Optional
 
 
-class UserDAO:
+class UserDAO(BaseDAO[UserModel, UserCreate, UserUpdate]):
     """
-    Encapsulates all asynchronous database operations related to UserModel.
+    Async DAO for the User domain.
+
+    Inherits all CRUD methods from BaseDAO and provides a centralized point
+    for future user-specific persistence operations, such as:
+
+    - `get_by_email(email: str)`
+    - `get_active_users()`
+    - `search_users(...)`
+
+    Args:
+        session (AsyncSession): SQLAlchemy async session injected via dependency.
     """
 
     def __init__(self, session: AsyncSession):
-        self.session = session
-
-    async def get_user(self, user_id: int) -> Optional[UserModel]:
-        result = await self.session.execute(select(UserModel).where(UserModel.id == user_id))
-        return result.scalar_one_or_none()
-
-    async def get_all_users(self, limit: int = 100, offset: int = 0) -> list[UserModel]:
-        result = await self.session.execute(select(UserModel).offset(offset).limit(limit))
-        return list(result.scalars().all())
-
-    async def create_user(self, user: UserCreate) -> UserModel:
-        db_user = UserModel(**user.model_dump())
-        self.session.add(db_user)
-        await self.session.commit()
-        await self.session.refresh(db_user)
-        return db_user
-
-    async def update_user(self, user_id: int, user: UserUpdate) -> Optional[UserModel]:
-        db_user = await self.get_user(user_id)
-        if db_user:
-            for field, value in user.model_dump(exclude_unset=True).items():
-                setattr(db_user, field, value)
-            await self.session.commit()
-            await self.session.refresh(db_user)
-        return db_user
-
-    async def delete_user(self, user_id: int) -> Optional[UserModel]:
-        db_user = await self.get_user(user_id)
-        if db_user:
-            await self.session.delete(db_user)
-            await self.session.commit()
-        return db_user
+        super().__init__(session, model_class=UserModel)
