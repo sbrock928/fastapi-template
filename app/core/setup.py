@@ -6,7 +6,7 @@ includes routers, and defines custom exception handlers.
 """
 
 from fastapi import FastAPI
-from app.core.db import init_db
+from app.core.database import init_db
 
 
 def create_app() -> FastAPI:
