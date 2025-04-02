@@ -10,8 +10,7 @@ from typing import Annotated, Iterator
 import app.core.config as config
 from fastapi import Depends
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, declarative_base
 
 # Use an in-memory SQLite database for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:" if config.TESTING else config.SQLALCHEMY_DATABASE_URL
