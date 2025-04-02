@@ -14,9 +14,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
 # Use an in-memory SQLite database for testing
-SQLALCHEMY_DATABASE_URL = (
-    "sqlite:///:memory:" if config.TESTING else config.SQLALCHEMY_DATABASE_URL
-)
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:" if config.TESTING else config.SQLALCHEMY_DATABASE_URL
 
 engine = create_engine(config.SQLALCHEMY_DATABASE_URL)
 
