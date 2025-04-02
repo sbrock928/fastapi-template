@@ -1,15 +1,13 @@
 """
-Business logic layer for the User domain.
+Async service layer for user domain operations.
 
-This module coordinates the core domain logic for users, connecting data access
-(DAO), schema validation (Pydantic), and model persistence (SQLAlchemy).
-
-Responsibilities:
-- Manages workflows involving user creation, retrieval, update, and deletion.
-- Enforces domain rules and orchestrates DAO behavior.
-- Provides a clear interface between route handlers and the persistence layer.
+This module contains the UserService class, which encapsulates the business logic
+for user-related operations. It acts as an intermediary between the web layer
+(routes/controllers) and the data access layer (DAO), ensuring consistent
+application logic, error handling, and validation coordination.
 """
 
+from typing import List
 from app.users.dao import UserDAO
 from app.users.models import UserModel
 from app.users.schemas import UserCreate, UserUpdate
@@ -18,90 +16,99 @@ from app.users.exceptions import UserNotFound
 
 class UserService:
     """
-    A service class for managing user-related operations.
+    Provides asynchronous business logic for the User domain.
+
+    Responsibilities:
+    - Orchestrates calls to the UserDAO.
+    - Applies domain-specific validation and rules.
+    - Raises domain-specific exceptions to signal business errors.
     """
 
     def __init__(self, dao: UserDAO):
         """
-        Initializes the service with a user DAO.
+        Initializes the UserService with a given UserDAO.
 
         Args:
-            dao (UserDAO): The DAO responsible for user database access.
+            dao (UserDAO): The data access object used to interact with the database.
         """
         self.dao = dao
 
-    def get_user(self, user_id: int) -> UserModel:
+    async def get_user(self, user_id: int) -> UserModel:
         """
-        Retrieves a user by ID.
+        Retrieve a single user by ID.
 
         Args:
             user_id (int): The ID of the user to retrieve.
 
         Returns:
-            UserModel: The user object.
+            UserModel: The user with the specified ID.
 
         Raises:
             UserNotFound: If no user with the given ID exists.
         """
-        user = self.dao.get_user(user_id)
+        user = await self.dao.get(user_id)
         if not user:
             raise UserNotFound()
         return user
 
-    def get_all_users(self) -> list[UserModel]:
+    async def get_all_users(self, limit: int = 100, offset: int = 0) -> List[UserModel]:
         """
-        Retrieves all users.
-
-        Returns:
-            list[UserModel]: All user records in the database.
-        """
-        return self.dao.get_all_users()
-
-    def create_user(self, user: UserCreate) -> UserModel:
-        """
-        Creates a new user from validated input.
+        Retrieve a paginated list of users.
 
         Args:
-            user (UserCreate): Data for the new user.
+            limit (int, optional): Maximum number of users to return. Defaults to 100.
+            offset (int, optional): Number of records to skip. Defaults to 0.
 
         Returns:
-            UserModel: The newly created user object.
+            List[UserModel]: A list of user records.
         """
-        return self.dao.create_user(user)
+        return await self.dao.get_all(limit=limit, offset=offset)
 
-    def update_user(self, user_id: int, user: UserUpdate) -> UserModel:
+    async def create_user(self, user: UserCreate) -> UserModel:
         """
-        Updates an existing user by ID.
+        Create a new user from validated input data.
+
+        Args:
+            user (UserCreate): A Pydantic schema representing the new user.
+
+        Returns:
+            UserModel: The newly created user record.
+        """
+        return await self.dao.create(user)
+
+    async def update_user(self, user_id: int, user: UserUpdate) -> UserModel:
+        """
+        Update an existing user's data.
 
         Args:
             user_id (int): The ID of the user to update.
-            user (UserUpdate): Data with updated fields.
+            user (UserUpdate): A Pydantic schema containing updated fields.
 
         Returns:
-            UserModel: The updated user object.
+            UserModel: The updated user record.
 
         Raises:
             UserNotFound: If no user with the given ID exists.
         """
-        updated_user = self.dao.update_user(user_id, user)
+        updated_user = await self.dao.update(user_id, user)
         if not updated_user:
             raise UserNotFound()
         return updated_user
 
-    def delete_user(self, user_id: int) -> UserModel:
+    async def delete_user(self, user_id: int) -> UserModel:
         """
-        Deletes a user by ID.
+        Delete a user by ID.
 
         Args:
             user_id (int): The ID of the user to delete.
 
         Returns:
-            UserModel: The deleted user object.
+            UserModel: The deleted user record.
 
         Raises:
             UserNotFound: If no user with the given ID exists.
         """
-        deleted_user = self.dao.delete_user(user_id)
+        deleted_user = await self.dao.delete(user_id)
         if not deleted_user:
             raise UserNotFound()
         return deleted_user

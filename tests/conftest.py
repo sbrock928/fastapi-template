@@ -7,9 +7,10 @@ from app.core.database import Base, engine
 
 
 @pytest.fixture(autouse=True)
-def reset_db() -> None:
+async def reset_db() -> None:
     """
     Fixture to reset the database before each test.
     """
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
