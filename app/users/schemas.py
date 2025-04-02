@@ -9,11 +9,16 @@ from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import Optional
 
 
-class UserBase(BaseModel):
+class UserNameMixin(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
+
+
+class UserEmailMixin(BaseModel):
     email: EmailStr = Field(..., max_length=255)
 
+
+class UserBase(UserNameMixin, UserEmailMixin):
     model_config = ConfigDict(from_attributes=True, strict=True, extra="forbid")
 
 
