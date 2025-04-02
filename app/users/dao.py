@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.users.models import UserModel
 from app.users.schemas import UserCreate, UserUpdate
-from typing import List, Optional
+from typing import Optional
 
 
 class UserDAO:
@@ -22,9 +22,9 @@ class UserDAO:
         result = await self.session.execute(select(UserModel).where(UserModel.id == user_id))
         return result.scalar_one_or_none()
 
-    async def get_all_users(self, limit: int = 100, offset: int = 0) -> List[UserModel]:
+    async def get_all_users(self, limit: int = 100, offset: int = 0) -> list[UserModel]:
         result = await self.session.execute(select(UserModel).offset(offset).limit(limit))
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def create_user(self, user: UserCreate) -> UserModel:
         db_user = UserModel(**user.model_dump())
