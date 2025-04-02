@@ -1,0 +1,84 @@
+<!-- app/logging/templates/logs.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>API Logs Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            max-width: 400px;
+            overflow: auto;
+        }
+        th {
+            background-color: #333;
+            color: #fff;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #ddd;
+        }
+        .status-code {
+            font-weight: bold;
+        }
+        .status-code.success { color: green; }
+        .status-code.error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>API Logs</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Query String</th>
+                <th>Request Body</th>
+                <th>Response Body</th>
+                <th>Status Code</th>
+                <th>Duration (ms)</th>
+                <th>User ID</th>
+                <th>Client Host</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.timestamp }}</td>
+                <td>{{ log.method }}</td>
+                <td>{{ log.path }}</td>
+                <td>{{ log.query_string }}</td>
+                <td>{{ log.request_body }}</td>
+                <td>{{ log.response_body }}</td>
+                <td class="status-code {% if log.status_code < 400 %}success{% else %}error{% endif %}">
+                    {{ log.status_code }}
+                </td>
+                <td>{{ log.duration_ms }}</td>
+                <td>{{ log.user_id or '-' }}</td>
+                <td>{{ log.client_host }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7">No logs available.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
