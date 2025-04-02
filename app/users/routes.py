@@ -53,8 +53,6 @@ async def update_user(
 
 
 @router.delete("/{user_id}", response_model=UserResponse, summary="Delete user by ID")
-async def delete_user(
-    user_id: int, service: UserService = Depends(get_user_service)
-) -> Any:
+async def delete_user(user_id: int, service: UserService = Depends(get_user_service)) -> Any:
     """Delete a user by their unique ID."""
     return await service.delete_user(user_id)
