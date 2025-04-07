@@ -19,6 +19,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # pylint: disab
     yield
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # pylint: disable=unused-argument
+    await init_db()
+    yield
+
+
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
     app.add_middleware(LoggingMiddleware)
