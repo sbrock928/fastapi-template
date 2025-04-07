@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.core.database import init_db
 from app.core.router import register_routes
+from app.core.logging.middleware import LoggingMiddleware
 
 
 @asynccontextmanager
@@ -20,5 +21,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # pylint: disab
 
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
+    app.add_middleware(LoggingMiddleware)
     register_routes(app)
     return app
