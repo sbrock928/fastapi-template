@@ -19,7 +19,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response, StreamingResponse
 from starlette.types import Message
 from app.core.database import AsyncSessionLocal
-from app.core.logging.models import APILog
+from app.logging.models import APILog
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):

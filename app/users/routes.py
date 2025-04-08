@@ -7,14 +7,13 @@ from fastapi import APIRouter, Depends, Query
 from app.users.schemas import UserCreate, UserResponse, UserUpdate
 from app.users.service import UserService
 from app.users.dao import UserDAO
-from app.core.database import get_async_session
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.dependencies import AsyncSessionDep
 from typing import Any
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-def get_user_service(session: AsyncSession = Depends(get_async_session)) -> UserService:
+def get_user_service(session: AsyncSessionDep) -> UserService:
     return UserService(UserDAO(session))
 
 

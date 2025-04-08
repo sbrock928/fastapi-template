@@ -8,7 +8,7 @@ queries and database interactions.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.dao import BaseDAO
+from app.base_dao import BaseDAO
 from app.users.models import UserModel
 from app.users.schemas import UserCreate, UserUpdate
 

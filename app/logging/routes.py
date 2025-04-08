@@ -17,17 +17,17 @@ Dependencies:
 from math import ceil
 
 # FastAPI imports grouped together
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 # SQLAlchemy imports
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+
 
 # Local imports
-from app.core.database import get_async_session
-from app.core.logging.models import APILog
+from app.dependencies import AsyncSessionDep
+from app.logging.models import APILog
 
 router = APIRouter(prefix="/admin/logs", tags=["Logs"])
 templates = Jinja2Templates(directory="app/templates")
@@ -36,9 +36,9 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("")
 async def get_logs(
     request: Request,
+    session: AsyncSessionDep,
     page: int = Query(1, ge=1),
     per_page: int = Query(10, le=100),
-    session: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
     """Render the main logs page with paginated data."""
     # Get total count for pagination
@@ -77,9 +77,9 @@ async def get_logs(
 @router.get("/partial", response_class=HTMLResponse)
 async def get_logs_partial(
     request: Request,
+    session: AsyncSessionDep,
     page: int = Query(1, ge=1),
     per_page: int = Query(10, le=100),
-    session: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
     """Return partial template with paginated log data."""
     # Get total count for pagination
