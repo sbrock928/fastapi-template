@@ -2,7 +2,6 @@
 Integration tests for the user endpoints.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from typing import Dict, Any
 
