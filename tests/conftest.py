@@ -2,7 +2,7 @@
 This module contains fixtures for setting up the test environment.
 """
 
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
