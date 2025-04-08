@@ -7,3 +7,4 @@ SQLAlchemy==2.0.29
 uvicorn==0.34.0
 email_validator==2.2.0
 pytz==2024.1
+pydantic-settings==2.2.1

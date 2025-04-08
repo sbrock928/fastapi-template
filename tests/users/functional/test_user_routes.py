@@ -2,11 +2,12 @@
 Integration tests for the user endpoints.
 """
 
-from tests.test_client import client
+import pytest
+from fastapi.testclient import TestClient
 from typing import Dict, Any
 
 
-def test_create_user(user_payload: Dict[str, Any]) -> None:
+def test_create_user(client: TestClient, user_payload: Dict[str, Any]) -> None:
     response = client.post("/users", json=user_payload)
     assert response.status_code == 201
     data = response.json()
@@ -16,7 +17,7 @@ def test_create_user(user_payload: Dict[str, Any]) -> None:
     assert "id" in data
 
 
-def test_get_all_users(user_payload: Dict[str, Any]) -> None:
+def test_get_all_users(client: TestClient, user_payload: Dict[str, Any]) -> None:
     client.post("/users", json=user_payload)
     response = client.get("/users")
     assert response.status_code == 200
@@ -24,21 +25,21 @@ def test_get_all_users(user_payload: Dict[str, Any]) -> None:
     assert len(response.json()) == 1
 
 
-def test_get_user_by_id(user_payload: Dict[str, Any]) -> None:
+def test_get_user_by_id(client: TestClient, user_payload: Dict[str, Any]) -> None:
     user = client.post("/users", json=user_payload).json()
     response = client.get(f"/users/{user['id']}")
     assert response.status_code == 200
     assert response.json()["first_name"] == "Alice"
 
 
-def test_patch_user(user_payload: Dict[str, Any]) -> None:
+def test_patch_user(client: TestClient, user_payload: Dict[str, Any]) -> None:
     user = client.post("/users", json=user_payload).json()
     response = client.patch(f"/users/{user['id']}", json={"last_name": "Johnson"})
     assert response.status_code == 200
     assert response.json()["last_name"] == "Johnson"
 
 
-def test_delete_user(user_payload: Dict[str, Any]) -> None:
+def test_delete_user(client: TestClient, user_payload: Dict[str, Any]) -> None:
     user = client.post("/users", json=user_payload).json()
     response = client.delete(f"/users/{user['id']}")
     assert response.status_code == 200
