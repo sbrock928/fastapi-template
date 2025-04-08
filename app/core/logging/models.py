@@ -5,8 +5,11 @@ This module defines the SQLAlchemy ORM model `APILog`, which captures
 comprehensive logging data for monitoring, debugging, and analytical purposes.
 """
 
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime
+from sqlalchemy import DateTime
+from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
+import pytz
+from typing import Optional
 
 from app.core.database import Base
 
@@ -19,29 +22,36 @@ class APILog(Base):
     enabling comprehensive monitoring and debugging capabilities.
 
     Attributes:
-        id (int): Primary key and unique identifier for the log entry.
-        timestamp (datetime): UTC datetime when the log entry was created.
-        method (str): HTTP method used in the API request (e.g., GET, POST).
-        path (str): URL path requested.
-        query_string (Optional[str]): URL query parameters, if any.
-        request_body (Optional[str]): Raw request payload (as text).
-        response_body (Optional[str]): Raw response payload (as text).
-        status_code (int): HTTP status code of the API response.
-        duration_ms (float): Time taken to fulfill the request, in milliseconds.
-        user_id (Optional[str]): Identifier of the authenticated user, if available.
-        client_host (str): IP address or hostname of the requesting client.
+        id (Mapped[int]): Primary key and unique identifier for the log entry.
+        created_at (Mapped[datetime]): Eastern timezone datetime when the log entry was created.
+        method (Mapped[str]): HTTP method used in the API request (e.g., GET, POST).
+        path (Mapped[str]): URL path requested.
+        query_string (Mapped[str]): URL query parameters as a string.
+        request_body (Mapped[Optional[str]]): Raw request payload (as text), if any.
+        response_body (Mapped[Optional[str]]): Raw response payload (as text), if any.
+        status_code (Mapped[int]): HTTP status code of the API response.
+        duration_ms (Mapped[float]): Time taken to fulfill the request, in milliseconds.
+        user_id (Mapped[Optional[str]]): Identifier of the authenticated user, if available.
+        client_host (Mapped[Optional[str]]): IP address or hostname of the requesting client.
+
+    Note:
+        - All timestamps are stored in Eastern Time (America/New_York)
+        - Query strings are stored as raw strings, not parsed parameters
+        - Request and response bodies may be truncated for large payloads
     """
 
     __tablename__ = "api_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
-    method = Column(String, nullable=False)
-    path = Column(String, nullable=False)
-    query_string = Column(String, nullable=True)
-    request_body = Column(Text, nullable=True)
-    response_body = Column(Text, nullable=True)
-    status_code = Column(Integer, nullable=False)
-    duration_ms = Column(Float, nullable=False)
-    user_id = Column(String, nullable=True)
-    client_host = Column(String, nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(pytz.timezone("America/New_York"))
+    )
+    method: Mapped[str]
+    path: Mapped[str]
+    query_string: Mapped[str]
+    request_body: Mapped[Optional[str]]
+    response_body: Mapped[Optional[str]]
+    status_code: Mapped[int]
+    duration_ms: Mapped[float]
+    user_id: Mapped[Optional[str]]
+    client_host: Mapped[Optional[str]]

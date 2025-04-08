@@ -21,8 +21,15 @@ Base = declarative_base()
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionLocal() as session:
+    """
+    Dependency that provides an async database session with automatic cleanup.
+    Ensures the session is properly closed even if an error occurs.
+    """
+    session = AsyncSessionLocal()
+    try:
         yield session
+    finally:
+        await session.close()
 
 
 async def init_db() -> None:

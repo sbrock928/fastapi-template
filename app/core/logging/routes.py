@@ -7,20 +7,25 @@ that presents recent logs with formatted request and response details.
 
 Endpoints:
     - GET /admin/logs: Renders recent API request and response logs.
+    - GET /admin/logs/partial: Returns partial template for AJAX updates.
 
 Dependencies:
     - Jinja2Templates for HTML templating.
     - Async SQLAlchemy session for asynchronous database access.
-
 """
 
-from typing import Any
+from math import ceil
 
-from fastapi import APIRouter, Depends, Query, Request
+# FastAPI imports grouped together
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select
+
+# SQLAlchemy imports
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# Local imports
 from app.core.database import get_async_session
 from app.core.logging.models import APILog
 
@@ -31,27 +36,80 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("")
 async def get_logs(
     request: Request,
-    limit: int = Query(50, le=100),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, le=100),
     session: AsyncSession = Depends(get_async_session),
-) -> Any:
+) -> HTMLResponse:
+    """Render the main logs page with paginated data."""
+    # Get total count for pagination
+    count_stmt = select(func.count()).select_from(APILog)  # pylint: disable=not-callable
+    count_result = await session.execute(count_stmt)
+    total_logs = count_result.scalar() or 0
+    total_pages = max(1, ceil(total_logs / per_page))
 
-    result = await session.execute(select(APILog).order_by(APILog.timestamp.desc()).limit(limit))
-    logs = list(result.scalars().all())
+    if page > total_pages and total_pages > 0:
+        raise HTTPException(status_code=404, detail="Page not found")
 
-    formatted_logs = [
+    # Get paginated logs
+    result = await session.execute(
+        select(APILog)
+        .order_by(APILog.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+    )
+    logs = result.scalars().all()
+
+    return templates.TemplateResponse(
+        "logs.html",
         {
-            "timestamp": log.timestamp.isoformat(),
-            "method": log.method,
-            "path": log.path,
-            "query_string": log.query_string,
-            "request_body": log.request_body,
-            "response_body": log.response_body,
-            "status_code": log.status_code,
-            "duration_ms": round(log.duration_ms, 2),
-            "user_id": log.user_id,
-            "client_host": log.client_host,
-        }
-        for log in logs
-    ]
+            "request": request,
+            "logs": logs,
+            "pagination": {
+                "current_page": page,
+                "total_pages": total_pages,
+                "per_page": per_page,
+                "total_logs": total_logs,
+            },
+        },
+    )
 
-    return templates.TemplateResponse("logs.html", {"request": request, "logs": formatted_logs})
+
+@router.get("/partial", response_class=HTMLResponse)
+async def get_logs_partial(
+    request: Request,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, le=100),
+    session: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Return partial template with paginated log data."""
+    # Get total count for pagination
+    count_stmt = select(func.count()).select_from(APILog)  # pylint: disable=not-callable
+    count_result = await session.execute(count_stmt)
+    total_logs = count_result.scalar() or 0
+    total_pages = max(1, ceil(total_logs / per_page))
+
+    if page > total_pages and total_pages > 0:
+        raise HTTPException(status_code=404, detail="Page not found")
+
+    # Get paginated logs
+    result = await session.execute(
+        select(APILog)
+        .order_by(APILog.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+    )
+    logs = result.scalars().all()
+
+    return templates.TemplateResponse(
+        "partials/_logs_table.html",
+        {
+            "request": request,
+            "logs": logs,
+            "pagination": {
+                "current_page": page,
+                "total_pages": total_pages,
+                "per_page": per_page,
+                "total_logs": total_logs,
+            },
+        },
+    )
