@@ -1,0 +1,57 @@
+{% for log in logs %}
+<tr>
+    <td data-order="{{ log.created_at.isoformat() }}">{{ log.created_at.strftime('%Y-%m-%d') }}</td>
+    <td data-order="{{ log.created_at.isoformat() }}">{{ log.created_at.strftime('%I:%M:%S %p') }}</td>
+    <td>{{ log.method }}</td>
+    <td>{{ log.path }}</td>
+    <td>{{ log.query_string or '-' }}</td>
+    <td title="{{ log.request_body }}">{{ log.request_body[:100] + '...' if log.request_body and log.request_body|length > 100 else log.request_body or '-' }}</td>
+    <td title="{{ log.response_body }}">{{ log.response_body[:100] + '...' if log.response_body and log.response_body|length > 100 else log.response_body or '-' }}</td>
+    <td class="status-code {% if log.status_code < 400 %}success{% else %}error{% endif %}">
+        {{ log.status_code }}
+    </td>
+    <td data-order="{{ log.duration_ms }}">{{ "%.2f"|format(log.duration_ms) }}</td>
+    <td>{{ log.user_id or '-' }}</td>
+    <td>{{ log.client_host or '-' }}</td>
+</tr>
+{% else %}
+<tr>
+    <td colspan="11" style="text-align: center;">No logs available</td>
+</tr>
+{% endfor %}
+
+{% if pagination %}
+<tr class="pagination-row">
+    <td colspan="11">
+        <div class="pagination">
+            {% if pagination.current_page > 1 %}
+                <a href="#" onclick="changePage(1); return false;" class="page-link">First</a>
+                <a href="#" onclick="changePage({{ pagination.current_page - 1 }}); return false;" class="page-link">&laquo; Previous</a>
+            {% endif %}
+
+            {# Calculate page range #}
+            {% set start_page = pagination.current_page - 2 if pagination.current_page - 2 > 0 else 1 %}
+            {% set end_page = start_page + 4 if start_page + 4 <= pagination.total_pages else pagination.total_pages %}
+            {% set start_page = end_page - 4 if end_page - 4 > 0 and end_page == pagination.total_pages else start_page %}
+
+            {% for page_num in range(start_page, end_page + 1) %}
+                <a href="#" 
+                   onclick="changePage({{ page_num }}); return false;"
+                   class="page-link {% if page_num == pagination.current_page %}active{% endif %}">
+                    {{ page_num }}
+                </a>
+            {% endfor %}
+
+            {% if pagination.current_page < pagination.total_pages %}
+                <a href="#" onclick="changePage({{ pagination.current_page + 1 }}); return false;" class="page-link">Next &raquo;</a>
+                <a href="#" onclick="changePage({{ pagination.total_pages }}); return false;" class="page-link">Last</a>
+            {% endif %}
+            
+            <span class="pagination-info">
+                Page {{ pagination.current_page }} of {{ pagination.total_pages }}
+                ({{ pagination.total_logs }} total logs)
+            </span>
+        </div>
+    </td>
+</tr>
+{% endif %}
