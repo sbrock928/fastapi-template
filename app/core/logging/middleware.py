@@ -16,6 +16,8 @@ import time
 from typing import Callable, Awaitable
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response, StreamingResponse
+from fastapi.responses import JSONResponse
 from app.core.database import AsyncSessionLocal
 from app.core.logging.models import APILog
 
@@ -41,54 +43,67 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         in trusted environments only. Avoid logging sensitive or PII data in production.
     """
 
+    # Paths that should not be logged
+    EXCLUDED_PATHS = ["/admin/logs", "/admin/logs/partial", "/openapi.json", "/docs"]
+
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        """
-        Intercepts each request and response, collects diagnostic metadata,
-        and persists it to the logging database.
+        # Skip logging for excluded paths
+        if any(request.url.path.startswith(path) for path in self.EXCLUDED_PATHS):
+            return await call_next(request)
 
-        Args:
-            request (Request): The incoming HTTP request.
-            call_next (Callable): A function that proceeds to the next middleware or route handler.
-
-        Returns:
-            Response: The HTTP response returned by the route handler.
-        """
-        # Record the start time for execution duration tracking
         start_time = time.perf_counter()
 
-        # Read and buffer the request body
-        request_body = await request.body()
+        # Read and buffer the request body once
+        body_bytes = await request.body()
+        # Store for later use
+        request._body = body_bytes
 
         # Continue processing the request
         response = await call_next(request)
 
-        # Calculate how long the request took
+        # Capture response body
+        response_body = None
+
+        if isinstance(response, StreamingResponse):
+            response_body = "[Streaming Response]"
+        else:
+            # Get the response body
+            response_content = [section async for section in response.body_iterator]
+            response_body = b"".join(response_content).decode("utf-8", errors="ignore")
+
+            # Reconstruct the response with the same body
+            new_response = Response(
+                content=response_body,
+                status_code=response.status_code,
+                headers=dict(response.headers),
+                media_type=response.media_type,
+            )
+            response = new_response
+
+        # Calculate duration and create log entry
         duration_ms = (time.perf_counter() - start_time) * 1000
 
-        # Extract optional user ID (customize this to your auth system)
-        user_id = request.headers.get("X-User-Id")
-
-        # Extract client host, if available
-        client_host = request.client.host if request.client else None
-
-        # Build and persist a structured log entry
+        # Build and persist log entry
         log = APILog(
             method=request.method,
             path=request.url.path,
             query_string=str(request.url.query),
-            request_body=request_body.decode("utf-8", errors="ignore") if request_body else None,
-            response_body=getattr(response, "body", b"").decode("utf-8", errors="ignore"),
+            request_body=body_bytes.decode("utf-8", errors="ignore") if body_bytes else None,
+            response_body=response_body,
             status_code=response.status_code,
             duration_ms=duration_ms,
-            user_id=user_id,
-            client_host=client_host,
+            user_id=request.headers.get("X-User-Id"),
+            client_host=request.client.host if request.client else None,
         )
 
+        # Save to database
         db = AsyncSessionLocal()
-        db.add(log)
-        await db.commit()
-        await db.close()
+        try:
+            db.add(log)
+            await db.commit()
+        finally:
+            await db.close()
 
         return response
