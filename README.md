@@ -19,23 +19,28 @@ fastapi-template/
 ├── app/
 │   ├── core/
 │   │   ├── logging/
-│   │   │   ├── models.py      # Database models for API logs
-│   │   │   ├── middleware.py  # Request logging middleware
-│   │   │   └── routes.py      # Log viewer endpoints
-│   │   ├── database.py        # Database configuration
-│   │   ├── config.py          # Application configuration
-│   │   └── setup.py          # App initialization
+│   │   │   ├── models.py       # Database models for API logs
+│   │   │   ├── middleware.py   # Request logging middleware
+│   │   │   └── routes.py       # Log viewer endpoints
+│   │   ├── database.py         # Database and Session configuration
+│   │   ├── dao.py              # Base Data Access Object (DAO) class
+│   │   ├── exceptions.py       # Customized Exception handling
+│   │   ├── config.py           # Application configuration
+│   │   ├── router.py           # Application route registration
+│   │   └── setup.py            # App initialization
 │   ├── users/
-│   │   ├── models.py         # User-related database models
-│   │   ├── schemas.py        # Pydantic models for user data
-│   │   ├── routes.py         # User management endpoints
-│   │   ├── dependencies.py   # User-related dependencies
-│   │   └── security.py       # Authentication & authorization
+│   │   ├── models.py           # User-related database models
+│   │   ├── schemas.py          # Pydantic models for user data
+│   │   ├── routes.py           # User management endpoints
+│   │   ├── dao.py              # User DAO
+│   │   ├── exceptions.py       # User Exceptions
+│   │   └── service.py          # Busines Logic for User management
 │   └── templates/
-│       └── logs.html         # Log viewer template
-├── requirements.txt          # Production dependencies
-├── dev-requirements.txt     # Development dependencies
-└── run.py                  # Development server entry point
+│       └── logs.html           # Log viewer template
+├── tests/                      # Functional and Unit tests
+├── requirements.txt            # Production dependencies
+├── dev-requirements.txt        # Development dependencies
+└── run.py                      # Development server entry point
 ```
 
 The `app/users/` module handles:
@@ -146,14 +151,6 @@ The template uses SQLite by default:
 - Async operations using aiosqlite
 - Automatic schema creation on startup
 
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
@@ -162,4 +159,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - FastAPI documentation
 - SQLAlchemy documentation
-- Python asyncio community
+- Pydantic documentation
