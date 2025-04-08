@@ -13,11 +13,11 @@ Note:
 """
 
 import time
-from typing import Callable, Awaitable
-from fastapi import Request, Response
+from typing import Callable, Awaitable, List, Dict, Any
+from starlette.requests import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response, StreamingResponse
-from fastapi.responses import JSONResponse
+from starlette.types import Message
 from app.core.database import AsyncSessionLocal
 from app.core.logging.models import APILog
 
@@ -57,8 +57,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
         # Read and buffer the request body once
         body_bytes = await request.body()
-        # Store for later use
-        request._body = body_bytes
 
         # Continue processing the request
         response = await call_next(request)
@@ -69,8 +67,29 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         if isinstance(response, StreamingResponse):
             response_body = "[Streaming Response]"
         else:
-            # Get the response body
-            response_content = [section async for section in response.body_iterator]
+            # Get the response body using the raw response interface
+            response_content: List[bytes] = []
+
+            # Create a custom receive function that returns the response chunks
+            async def receive() -> Message:
+                return {"type": "http.response.body", "body": b"", "more_body": False}
+
+            # Create a custom send function that captures the response body
+            async def send(message: Message) -> None:
+                if message["type"] == "http.response.body":
+                    if "body" in message:
+                        response_content.append(message["body"])
+
+            # Create proper ASGI scope
+            scope: Dict[str, Any] = {
+                "type": "http",
+                "asgi": {"version": "3.0"},
+                "http_version": "1.1",
+            }
+
+            # Call the response with proper scope
+            await response(scope, receive, send)
+
             response_body = b"".join(response_content).decode("utf-8", errors="ignore")
 
             # Reconstruct the response with the same body

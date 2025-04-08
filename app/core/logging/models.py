@@ -5,9 +5,8 @@ This module defines the SQLAlchemy ORM model `APILog`, which captures
 comprehensive logging data for monitoring, debugging, and analytical purposes.
 """
 
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime
+from sqlalchemy import DateTime
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql import func
 from datetime import datetime
 import pytz
 from typing import Optional
@@ -45,10 +44,7 @@ class APILog(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(
-            pytz.timezone("America/New_York")
-        ),  # Set default to Eastern timezone
+        DateTime(timezone=True), default=lambda: datetime.now(pytz.timezone("America/New_York"))
     )
     method: Mapped[str]
     path: Mapped[str]

@@ -14,14 +14,18 @@ Dependencies:
     - Async SQLAlchemy session for asynchronous database access.
 """
 
-from typing import Any
-from fastapi import APIRouter, Depends, Query, Request, HTTPException
-from fastapi.templating import Jinja2Templates
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi.responses import HTMLResponse
 from math import ceil
 
+# FastAPI imports grouped together
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+
+# SQLAlchemy imports
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+# Local imports
 from app.core.database import get_async_session
 from app.core.logging.models import APILog
 
@@ -38,9 +42,10 @@ async def get_logs(
 ) -> HTMLResponse:
     """Render the main logs page with paginated data."""
     # Get total count for pagination
-    count_result = await session.execute(select(func.count(APILog.id)))
-    total_logs = count_result.scalar()
-    total_pages = ceil(total_logs / per_page)
+    count_stmt = select(func.count()).select_from(APILog)  # pylint: disable=not-callable
+    count_result = await session.execute(count_stmt)
+    total_logs = count_result.scalar() or 0
+    total_pages = max(1, ceil(total_logs / per_page))
 
     if page > total_pages and total_pages > 0:
         raise HTTPException(status_code=404, detail="Page not found")
@@ -78,9 +83,10 @@ async def get_logs_partial(
 ) -> HTMLResponse:
     """Return partial template with paginated log data."""
     # Get total count for pagination
-    count_result = await session.execute(select(func.count(APILog.id)))
-    total_logs = count_result.scalar()
-    total_pages = ceil(total_logs / per_page)
+    count_stmt = select(func.count()).select_from(APILog)  # pylint: disable=not-callable
+    count_result = await session.execute(count_stmt)
+    total_logs = count_result.scalar() or 0
+    total_pages = max(1, ceil(total_logs / per_page))
 
     if page > total_pages and total_pages > 0:
         raise HTTPException(status_code=404, detail="Page not found")
