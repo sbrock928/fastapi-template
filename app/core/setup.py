@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.core.database import init_db
 from app.core.router import register_routes
-from app.core.logging.middleware import LoggingMiddleware
+from app.logging.middleware import LoggingMiddleware
 
 
 @asynccontextmanager

@@ -5,7 +5,7 @@ This module sets up the async database connection, initializes the metadata,
 and provides a dependency for async DB sessions.
 """
 
-from typing import AsyncGenerator
+from typing import Annotated, AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from fastapi import Depends

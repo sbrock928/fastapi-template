@@ -2,22 +2,25 @@
 This module contains fixtures for setting up the test environment.
 """
 
+from typing import AsyncGenerator, Generator
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
-from app.core.config import settings
+from app.core.config import settings, Settings
 from app.core.database import Base, engine
 
+# This needs to run before any database operations
+settings.TESTING = True
 
-@pytest.fixture(autouse=True)
-def test_settings():
+
+@pytest.fixture(scope="session", autouse=True)
+def test_settings() -> Settings:
     """Configure test settings for all tests."""
-    settings.TESTING = True
     return settings
 
 
 @pytest.fixture(autouse=True)
-async def setup_database():
+async def setup_database() -> AsyncGenerator[None, None]:
     """Create test database tables before each test."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -28,6 +31,6 @@ async def setup_database():
 
 
 @pytest.fixture
-def client():
+def client() -> TestClient:
     """Create a test client for the FastAPI application."""
     return TestClient(app)

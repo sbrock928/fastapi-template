@@ -5,7 +5,7 @@ Module for registering routes in the FastAPI application.
 from fastapi import FastAPI
 
 from app.users.routes import router as user_router
-from app.core.logging.routes import router as logging_router
+from app.logging.routes import router as logging_router
 
 
 def register_routes(app: FastAPI) -> None:

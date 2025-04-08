@@ -7,7 +7,7 @@ exceptions extend from the app-wide base exception classes and provide
 clear, domain-relevant error messages.
 """
 
-from app.core.exceptions import NotFound
+from app.exceptions import NotFound
 
 
 class UserNotFound(NotFound):
