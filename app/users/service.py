@@ -33,7 +33,7 @@ class UserService:
         """
         self.dao = dao
 
-    async def get_user(self, user_id: int) -> UserModel:
+    def get_user(self, user_id: int) -> UserModel:
         """
         Retrieve a single user by ID.
 
@@ -46,12 +46,12 @@ class UserService:
         Raises:
             UserNotFound: If no user with the given ID exists.
         """
-        user = await self.dao.get(user_id)
+        user = self.dao.get(user_id)
         if not user:
             raise UserNotFound()
         return user
 
-    async def get_all_users(self, limit: int = 100, offset: int = 0) -> List[UserModel]:
+    def get_all_users(self, limit: int = 100, offset: int = 0) -> List[UserModel]:
         """
         Retrieve a paginated list of users.
 
@@ -62,9 +62,9 @@ class UserService:
         Returns:
             List[UserModel]: A list of user records.
         """
-        return await self.dao.get_all(limit=limit, offset=offset)
+        return self.dao.get_all(limit=limit, offset=offset)
 
-    async def create_user(self, user: UserCreate) -> UserModel:
+    def create_user(self, user: UserCreate) -> UserModel:
         """
         Create a new user from validated input data.
 
@@ -74,9 +74,9 @@ class UserService:
         Returns:
             UserModel: The newly created user record.
         """
-        return await self.dao.create(user)
+        return self.dao.create(user)
 
-    async def update_user(self, user_id: int, user: UserUpdate) -> UserModel:
+    def update_user(self, user_id: int, user: UserUpdate) -> UserModel:
         """
         Update an existing user's data.
 
@@ -90,12 +90,12 @@ class UserService:
         Raises:
             UserNotFound: If no user with the given ID exists.
         """
-        updated_user = await self.dao.update(user_id, user)
+        updated_user = self.dao.update(user_id, user)
         if not updated_user:
             raise UserNotFound()
         return updated_user
 
-    async def delete_user(self, user_id: int) -> UserModel:
+    def delete_user(self, user_id: int) -> UserModel:
         """
         Delete a user by ID.
 
@@ -108,7 +108,7 @@ class UserService:
         Raises:
             UserNotFound: If no user with the given ID exists.
         """
-        deleted_user = await self.dao.delete(user_id)
+        deleted_user = self.dao.delete(user_id)
         if not deleted_user:
             raise UserNotFound()
         return deleted_user

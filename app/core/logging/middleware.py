@@ -1,24 +1,18 @@
 """
-FastAPI middleware for detailed HTTP request and response logging.
-
-This middleware automatically captures and logs key request and response data,
-including method, URL, headers, body content, status codes, processing duration,
-user identity, and client IP. Logs are persisted asynchronously to a separate
-SQLite database, supporting advanced debugging, performance monitoring, and
-auditing use cases.
-
-Note:
-    Use this middleware in secure, trusted environments to avoid potential
-    exposure of sensitive or personally identifiable information.
+This module contains middleware for logging detailed HTTP request and response data into a database.
 """
 
+import getpass
+import socket
 import time
 from typing import Callable, Awaitable, List, Dict, Any
-from starlette.requests import Request
+
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from starlette.responses import Response, StreamingResponse
 from starlette.types import Message
-from app.core.database import AsyncSessionLocal
+
+from app.core.database import SessionLocal
 from app.core.logging.models import APILog
 
 
@@ -44,7 +38,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     """
 
     # Paths that should not be logged
-    EXCLUDED_PATHS = ["/admin/logs", "/admin/logs/partial", "/openapi.json", "/docs"]
+    EXCLUDED_PATHS = ["/logs", "/openapi.json", "/docs"]
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -101,11 +95,12 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             )
             response = new_response
 
-        # Calculate duration and create log entry
         duration_ms = (time.perf_counter() - start_time) * 1000
+        user_id = getpass.getuser()
+        client_host = socket.gethostname()
 
         # Build and persist log entry
-        log = APILog(
+        log_entry = APILog(
             method=request.method,
             path=request.url.path,
             query_string=str(request.url.query),
@@ -113,16 +108,12 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             response_body=response_body,
             status_code=response.status_code,
             duration_ms=duration_ms,
-            user_id=request.headers.get("X-User-Id"),
-            client_host=request.client.host if request.client else None,
+            user_id=user_id,
+            client_host=client_host,
         )
 
-        # Save to database
-        db = AsyncSessionLocal()
-        try:
-            db.add(log)
-            await db.commit()
-        finally:
-            await db.close()
+        with SessionLocal() as db:
+            db.add(log_entry)
+            db.commit()
 
         return response

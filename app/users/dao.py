@@ -7,7 +7,7 @@ CRUD capabilities and serves as the foundation for more complex user-specific
 queries and database interactions.
 """
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from app.core.dao import BaseDAO
 from app.users.models import UserModel
 from app.users.schemas import UserCreate, UserUpdate
@@ -28,5 +28,5 @@ class UserDAO(BaseDAO[UserModel, UserCreate, UserUpdate]):
         session (AsyncSession): SQLAlchemy async session injected via dependency.
     """
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: Session):
         super().__init__(session, model_class=UserModel)

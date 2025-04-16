@@ -6,7 +6,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            padding: 20px;
+            padding: 0px;
             background-color: #f9f9f9;
         }
         table {
@@ -43,7 +43,7 @@
         .refresh-controls {
             margin-bottom: 20px;
             background: #fff;
-            padding: 10px;
+           padding: 10px;
             border-radius: 4px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
@@ -65,18 +65,15 @@
             opacity: 0.5;
             transition: opacity 0.3s;
         }
-
-        /* Updated pagination styles */
         .pagination {
             display: flex;
             align-items: center;
-            justify-content: flex-end; /* Right-align pagination controls */
+            justify-content: flex-end;
             gap: 8px;
             padding: 10px 20px;
             background: #fff;
             border-top: 1px solid #ddd;
         }
-
         .page-link {
             padding: 6px 10px;
             border: 1px solid #ddd;
@@ -88,33 +85,29 @@
             transition: all 0.2s ease;
             font-size: 0.9em;
         }
-
         .page-link:hover {
             background: #f0f0f0;
             border-color: #ccc;
         }
-
         .page-link.active {
             background: #333;
             color: #fff;
             border-color: #333;
         }
-
         .pagination-info {
             margin-left: 16px;
             color: #666;
             font-size: 0.9em;
             white-space: nowrap;
         }
-
         .pagination-row {
             background-color: #fff !important;
         }
     </style>
 </head>
 <body>
-    <h1>API Logs</h1>
-    
+    <h2>API Logs</h2>
+
     <div class="refresh-controls">
         <button onclick="toggleAutoRefresh()" id="refresh-toggle">Pause Auto-Refresh</button>
         <button onclick="refreshLogs()">Refresh Now</button>
@@ -144,78 +137,136 @@
             </tr>
         </thead>
         <tbody id="logs-body">
-            {% include "partials/_logs_table.html" %}
+            {% for log in logs %}
+            <tr>
+                <td data-order="{{ log.created_at.isoformat() }}">{{ log.created_at.strftime('%Y-%m-%d') }}</td>
+                <td data-order="{{ log.created_at.isoformat() }}">{{ log.created_at.strftime('%I:%M:%S %p') }}</td>
+                <td>{{ log.method }}</td>
+                <td>{{ log.path }}</td>
+                <td>{{ log.query_string or '-' }}</td>
+                <td title="{{ log.request_body }}">{{ log.request_body[:100] + '...' if log.request_body and log.request_body|length > 100 else log.request_body or '-' }}</td>
+                <td title="{{ log.response_body }}">{{ log.response_body[:100] + '...' if log.response_body and log.response_body|length > 100 else log.response_body or '-' }}</td>
+                <td class="status-code {% if log.status_code < 400 %}success{% else %}error{% endif %}">
+                    {{ log.status_code }}
+                </td>
+                <td data-order="{{ log.duration_ms }}">{{ "%.2f"|format(log.duration_ms) }}</td>
+                <td>{{ log.user_id or '-' }}</td>
+                <td>{{ log.client_host or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="11" style="text-align: center;">No logs available</td>
+            </tr>
+            {% endfor %}
+
+            {% if pagination %}
+            <tr class="pagination-row">
+                <td colspan="11">
+                    <div class="pagination">
+                        {% if pagination.current_page > 1 %}
+                            <a href="#" onclick="changePage(1); return false;" class="page-link">First</a>
+                            <a href="#" onclick="changePage({{ pagination.current_page - 1 }}); return false;" class="page-link">&laquo; Previous</a>
+                        {% endif %}
+
+                        {% set start_page = pagination.current_page - 2 if pagination.current_page - 2 > 0 else 1 %}
+                        {% set end_page = start_page + 4 if start_page + 4 <= pagination.total_pages else pagination.total_pages %}
+                        {% set start_page = end_page - 4 if end_page - 4 > 0 and end_page == pagination.total_pages else start_page %}
+
+                        {% for page_num in range(start_page, end_page + 1) %}
+                            <a href="#"
+                               onclick="changePage({{ page_num }}); return false;"
+                               class="page-link {% if page_num == pagination.current_page %}active{% endif %}">
+                                {{ page_num }}
+                            </a>
+                        {% endfor %}
+
+                        {% if pagination.current_page < pagination.total_pages %}
+                            <a href="#" onclick="changePage({{ pagination.current_page + 1 }}); return false;" class="page-link">Next &raquo;</a>
+                            <a href="#" onclick="changePage({{ pagination.total_pages }}); return false;" class="page-link">Last</a>
+                        {% endif %}
+
+                        <span class="pagination-info">
+                            Page {{ pagination.current_page }} of {{ pagination.total_pages }}
+                            ({{ pagination.total_logs }} total logs)
+                        </span>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
         </tbody>
     </table>
 
-    <script>
-        let autoRefreshEnabled = true;
-        let refreshInterval;
+<script>
+    let autoRefreshEnabled = true;
+    let refreshInterval;
 
-        function toggleAutoRefresh() {
-            autoRefreshEnabled = !autoRefreshEnabled;
-            const button = document.getElementById('refresh-toggle');
-            const status = document.getElementById('refresh-status');
-            if (autoRefreshEnabled) {
-                button.textContent = 'Pause Auto-Refresh';
-                status.textContent = 'Auto-refreshing every 30 seconds';
-                startAutoRefresh();
-            } else {
-                button.textContent = 'Resume Auto-Refresh';
-                status.textContent = 'Auto-refresh paused';
-                clearInterval(refreshInterval);
-            }
+    function toggleAutoRefresh() {
+        autoRefreshEnabled = !autoRefreshEnabled;
+        const button = document.getElementById('refresh-toggle');
+        const status = document.getElementById('refresh-status');
+        if (autoRefreshEnabled) {
+            button.textContent = 'Pause Auto-Refresh';
+            status.textContent = 'Auto-refreshing every 30 seconds';
+            startAutoRefresh();
+        } else {
+            button.textContent = 'Resume Auto-Refresh';
+            status.textContent = 'Auto-refresh paused';
+            clearInterval(refreshInterval);
         }
+    }
 
-        function changePage(page) {
-            const perPage = document.getElementById('per-page-select').value;
-            fetchLogs(page, perPage);
+    function changePage(page) {
+        const perPage = document.getElementById('per-page-select').value;
+        fetchLogs(page, perPage);
+    }
+
+    function changePerPage(perPage) {
+        fetchLogs(1, perPage);
+    }
+
+    function fetchLogs(page, perPage) {
+        const table = document.getElementById('logs-table');
+        table.classList.add('loading');
+
+        fetch(`/logs?page=${page}&per_page=${perPage}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newBody = doc.querySelector('#logs-body');
+                document.getElementById('logs-body').innerHTML = newBody.innerHTML;
+            })
+            .catch(error => {
+                console.error('Error fetching logs:', error);
+                const status = document.getElementById('refresh-status');
+                status.textContent = 'Error refreshing logs';
+                status.style.color = 'red';
+            })
+            .finally(() => {
+                table.classList.remove('loading');
+            });
+    }
+
+    function refreshLogs() {
+        const currentPage = parseInt(document.querySelector('.page-link.active')?.textContent) || 1;
+        const perPage = document.getElementById('per-page-select').value;
+        fetchLogs(currentPage, perPage);
+    }
+
+    function startAutoRefresh() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
         }
+        refreshInterval = setInterval(refreshLogs, 30000);
+    }
 
-        function changePerPage(perPage) {
-            fetchLogs(1, perPage); // Reset to first page when changing items per page
-        }
+    startAutoRefresh();
+</script>
 
-        function fetchLogs(page, perPage) {
-            const table = document.getElementById('logs-table');
-            table.classList.add('loading');
-
-            fetch(`/admin/logs/partial?page=${page}&per_page=${perPage}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.text();
-                })
-                .then(html => {
-                    document.getElementById('logs-body').innerHTML = html;
-                })
-                .catch(error => {
-                    console.error('Error fetching logs:', error);
-                    const status = document.getElementById('refresh-status');
-                    status.textContent = 'Error refreshing logs';
-                    status.style.color = 'red';
-                })
-                .finally(() => {
-                    table.classList.remove('loading');
-                });
-        }
-
-        function refreshLogs() {
-            const currentPage = parseInt(document.querySelector('.page-link.active')?.textContent) || 1;
-            const perPage = document.getElementById('per-page-select').value;
-            fetchLogs(currentPage, perPage);
-        }
-
-        function startAutoRefresh() {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-            }
-            refreshInterval = setInterval(refreshLogs, 30000);
-        }
-
-        // Start auto-refresh when page loads
-        startAutoRefresh();
-    </script>
 </body>
 </html>

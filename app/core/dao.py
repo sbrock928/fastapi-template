@@ -11,7 +11,7 @@ from typing import Generic, TypeVar, Type, Optional, List, Protocol, runtime_che
 
 from pydantic import BaseModel
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 
@@ -43,11 +43,11 @@ class BaseDAO(Generic[TModel, TCreateSchema, TUpdateSchema]):
         TUpdateSchema: The Pydantic schema used to update existing model instances.
     """
 
-    def __init__(self, session: AsyncSession, model_class: Type[TModel]):
+    def __init__(self, session: Session, model_class: Type[TModel]):
         self.session = session
         self.model_class = model_class
 
-    async def get(self, object_id: int) -> Optional[TModel]:
+    def get(self, object_id: int) -> Optional[TModel]:
         """
         Fetch a single object by primary key.
 
@@ -57,12 +57,12 @@ class BaseDAO(Generic[TModel, TCreateSchema, TUpdateSchema]):
         Returns:
             Optional[TModel]: The object instance if found, else None.
         """
-        result = await self.session.execute(
+        result = self.session.execute(
             select(self.model_class).where(self.model_class.id == object_id)
         )
         return result.scalar_one_or_none()
 
-    async def get_all(self, limit: int = 100, offset: int = 0) -> List[TModel]:
+    def get_all(self, limit: int = 100, offset: int = 0) -> List[TModel]:
         """
         Fetch all objects of this type with optional pagination.
 
@@ -73,10 +73,10 @@ class BaseDAO(Generic[TModel, TCreateSchema, TUpdateSchema]):
         Returns:
             List[TModel]: A list of model instances.
         """
-        result = await self.session.execute(select(self.model_class).offset(offset).limit(limit))
+        result = self.session.execute(select(self.model_class).offset(offset).limit(limit))
         return list(result.scalars().all())
 
-    async def create(self, schema: TCreateSchema) -> TModel:
+    def create(self, schema: TCreateSchema) -> TModel:
         """
         Insert a new object using the provided Pydantic creation schema.
 
@@ -88,11 +88,11 @@ class BaseDAO(Generic[TModel, TCreateSchema, TUpdateSchema]):
         """
         obj = self.model_class(**schema.model_dump())
         self.session.add(obj)
-        await self.session.commit()
-        await self.session.refresh(obj)
+        self.session.commit()
+        self.session.refresh(obj)
         return obj
 
-    async def update(self, object_id: int, schema: TUpdateSchema) -> Optional[TModel]:
+    def update(self, object_id: int, schema: TUpdateSchema) -> Optional[TModel]:
         """
         Update an existing object using the provided update schema.
 
@@ -103,15 +103,15 @@ class BaseDAO(Generic[TModel, TCreateSchema, TUpdateSchema]):
         Returns:
             Optional[TModel]: The updated object instance, or None if not found.
         """
-        obj = await self.get(object_id)
+        obj = self.get(object_id)
         if obj:
             for field, value in schema.model_dump(exclude_unset=True).items():
                 setattr(obj, field, value)
-            await self.session.commit()
-            await self.session.refresh(obj)
+            self.session.commit()
+            self.session.refresh(obj)
         return obj
 
-    async def delete(self, object_id: int) -> Optional[TModel]:
+    def delete(self, object_id: int) -> Optional[TModel]:
         """
         Delete an object by its primary key.
 
@@ -121,8 +121,8 @@ class BaseDAO(Generic[TModel, TCreateSchema, TUpdateSchema]):
         Returns:
             Optional[TModel]: The deleted object, or None if not found.
         """
-        obj = await self.get(object_id)
+        obj = self.get(object_id)
         if obj:
-            await self.session.delete(obj)
-            await self.session.commit()
+            self.session.delete(obj)
+            self.session.commit()
         return obj
